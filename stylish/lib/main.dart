@@ -2,6 +2,7 @@ import 'package:english_words/english_words.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 void main() {
   runApp(const MyApp());
@@ -53,20 +54,166 @@ class _HomePageState extends State<HomePage> {
         /* Header image */
         HeaderImageListView(imageList: appState.headerImageList),
         /*Category*/
-        Expanded(
-          child: Flex(
-            direction: Axis.horizontal, // Switch axis with device width
-            children: List.generate(
-              appState.categoryList.length,
-              (index) => CategoryView(
-                item: appState.categoryList[index],
-                viewWidth: MediaQuery.of(context).size.width /
-                    appState.categoryList.length,
+        MediaQuery.of(context).size.width > 800
+            ? CategoryHView(categoryList: appState.categoryList)
+            : CategoryVView(categoryList: appState.categoryList),
+      ],
+    );
+  }
+}
+
+class CategoryHView extends StatelessWidget {
+  const CategoryHView({
+    super.key,
+    required this.categoryList,
+  });
+
+  final List<CategoryItem> categoryList;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Flex(
+        direction: Axis.horizontal, // Switch axis with device width
+        children: List.generate(
+          categoryList.length,
+          (index) => CategoryHSubView(
+            item: categoryList[index],
+            viewWidth: MediaQuery.of(context).size.width / categoryList.length,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CategoryHSubView extends StatelessWidget {
+  final CategoryItem item;
+  final double viewWidth;
+
+  const CategoryHSubView(
+      {Key? key, required this.item, required this.viewWidth})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            height: 50,
+            child: Center(
+              child: Text(
+                item.title,
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: BouncingScrollPhysics(),
+              child: SizedBox(
+                width: viewWidth,
+                child: Column(
+                  children: [
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      scrollDirection: Axis.vertical,
+                      itemCount: item.productList.length,
+                      itemBuilder: (BuildContext context, int productIndex) {
+                        return ProductCard(
+                            item: item.productList[productIndex]);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CategoryVView extends StatelessWidget {
+  const CategoryVView({
+    Key? key,
+    required this.categoryList,
+  }) : super(key: key);
+
+  final List<CategoryItem> categoryList;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: SingleChildScrollView(
+        physics: BouncingScrollPhysics(),
+        child: kIsWeb
+            ? Column(
+                children: List.generate(
+                  categoryList.length,
+                  (index) => Column(
+                    children: [
+                      Text(categoryList[index].title),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: BouncingScrollPhysics(),
+                        itemCount: categoryList[index].productList.length,
+                        itemBuilder: (context, productIndex) {
+                          return ProductCard(
+                              item: categoryList[index]
+                                  .productList[productIndex]);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : Column(
+                //Detect platform
+                children: List.generate(
+                  categoryList.length,
+                  (index) => ExpandableList(
+                    title: categoryList[index].title,
+                    productList: categoryList[index].productList,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class ExpandableList extends StatelessWidget {
+  final String title;
+  final List<ProductItem> productList;
+
+  ExpandableList({required this.title, required this.productList});
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context)
+          .copyWith(dividerColor: Colors.white), // set top line color here
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ExpansionTile(
+          title: Text(title),
+          textColor: Colors.black,
+          children: [
+            ListView.builder(
+              shrinkWrap: true,
+              physics: BouncingScrollPhysics(),
+              itemCount: productList.length,
+              itemBuilder: (context, index) {
+                return ProductCard(item: productList[index]);
+              },
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -98,95 +245,52 @@ class HeaderImageListView extends StatelessWidget {
   }
 }
 
-class CategoryView extends StatelessWidget {
-  final CategoryItem item;
-  final double viewWidth;
+class ProductCard extends StatelessWidget {
+  const ProductCard({
+    super.key,
+    required this.item,
+  });
 
-  const CategoryView({Key? key, required this.item, required this.viewWidth})
-      : super(key: key);
+  final ProductItem item;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            height: 50,
-            child: Center(
-              child: Text(
-                item.title,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(0),
+      child: SizedBox(
+        height: 100,
+        child: Card(
+          child: ClipRRect(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(10),
+              bottomLeft: Radius.circular(10),
             ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              physics: BouncingScrollPhysics(),
-              child: SizedBox(
-                width: viewWidth,
-                child: Column(
-                  children: [
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      scrollDirection: Axis.vertical,
-                      itemCount: item.productList.length,
-                      itemBuilder: (BuildContext context, int productIndex) {
-                        return Padding(
-                          padding: const EdgeInsets.all(0),
-                          child: Container(
-                            height: 100,
-                            child: Card(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Colors.grey, width: 1.0),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image(
-                                          width: 100,
-                                          height: 100,
-                                          image: AssetImage(
-                                            item.productList[productIndex]
-                                                .imageName,
-                                          ),
-                                          fit: BoxFit.fill,
-                                        ),
-                                      ),
-                                      SizedBox(width: 10),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(item
-                                              .productList[productIndex].title),
-                                          Text(item.productList[productIndex]
-                                              .subtitle)
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey, width: 1.0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Image(
+                    width: 100,
+                    height: 100,
+                    image: AssetImage(
+                      item.imageName,
                     ),
-                  ],
-                ),
+                    fit: BoxFit.fill,
+                  ),
+                  SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [Text(item.title), Text(item.subtitle)],
+                  )
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -206,115 +310,103 @@ class MyAppState extends ChangeNotifier {
     CategoryItem(title: "女裝", productList: [
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 女裝",
           subtitle: "NT\$ 323")
     ]),
     CategoryItem(title: "男裝", productList: [
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 男裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 男裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 男裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 男裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 男裝",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 男裝",
           subtitle: "NT\$ 323")
     ]),
     CategoryItem(title: "配件", productList: [
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323"),
       ProductItem(
           imageName: 'assets/header_image.jpg',
-          title: "UNIQLO",
+          title: "UNIQLO 配件",
           subtitle: "NT\$ 323")
     ])
   ];
