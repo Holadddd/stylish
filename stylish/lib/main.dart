@@ -1,4 +1,5 @@
 import 'package:english_words/english_words.dart';
+import 'package:stylish/screens/product_detail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,22 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 void main() {
   runApp(const MyApp());
 }
+
+const String homeRoute = '/';
+const String detailRoute = '/detail';
+final Map<String, WidgetBuilder> routes = {
+  homeRoute: (context) => HomePage(),
+  detailRoute: (context) {
+    // Retrieves the arguments passed to the route when it was pushed.
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is ProductDetail) {
+      // Pass the ID parameter to the ProductDetailPage constructor
+      return ProductDetailPage(productDetail: args);
+    } else {
+      throw ArgumentError("Invalid argument for ProductDetailPage");
+    }
+  },
+};
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -17,27 +34,33 @@ class MyApp extends StatelessWidget {
       create: (context) => MyAppState(),
       child: MaterialApp(
         title: 'Stylish',
+        initialRoute: homeRoute,
+        routes: routes,
+        onGenerateRoute: (RouteSettings settings) {
+          final args = settings.arguments;
+          WidgetBuilder builder;
+          switch (settings.name) {
+            case detailRoute:
+              final productDetail = args as ProductDetail;
+              builder = (BuildContext context) => ProductDetailPage(
+                    productDetail: productDetail,
+                  );
+              break;
+            default:
+              throw Exception('Invalid route: ${settings.name}');
+          }
+          return MaterialPageRoute(builder: builder, settings: settings);
+        },
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.grey),
-        ),
-        home: Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.blueGrey,
-            title: Container(
-              padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-              height: 50,
-              child: Image(image: AssetImage('assets/bar_image.png')),
-            ),
-          ),
-          body: SafeArea(
-            child: HomePage(),
-          ),
         ),
       ),
     );
   }
 }
+
+typedef ProductItemCallback = void Function(ProductItem item);
 
 class HomePage extends StatefulWidget {
   @override
@@ -49,15 +72,65 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
 
-    return Column(
-      children: [
-        /* Header image */
-        HeaderImageListView(imageList: appState.headerImageList),
-        /*Category*/
-        MediaQuery.of(context).size.width > 800
-            ? CategoryHView(categoryList: appState.categoryList)
-            : CategoryVView(categoryList: appState.categoryList),
-      ],
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.blueGrey,
+        title: Container(
+          padding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+          height: 50,
+          child: Image(image: AssetImage('assets/bar_image.png')),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            /* Header image */
+            HeaderImageListView(imageList: appState.headerImageList),
+            /*Category*/
+            MediaQuery.of(context).size.width > 800
+                ? CategoryHView(
+                    categoryList: appState.categoryList,
+                    didClickItem: (item) {
+                      // Handle navigate
+                      Navigator.pushNamed(context, detailRoute,
+                          arguments: ProductDetail(
+                              coverImageName: item.imageName,
+                              title: item.title,
+                              productID: "20230405",
+                              price: 123,
+                              sizes: ["S", "M", "L"],
+                              colors: [Colors.green, Colors.blue],
+                              contents: "This is content",
+                              contentImageName: [
+                                item.imageName,
+                                item.imageName,
+                                item.imageName
+                              ]));
+                    },
+                  )
+                : CategoryVView(
+                    categoryList: appState.categoryList,
+                    didClickItem: (item) {
+                      // Handle navigate
+                      Navigator.pushNamed(context, detailRoute,
+                          arguments: ProductDetail(
+                              coverImageName: item.imageName,
+                              title: item.title,
+                              productID: "20230405",
+                              price: 123,
+                              sizes: ["S", "M", "L"],
+                              colors: [Colors.green, Colors.blue],
+                              contents: "This is content",
+                              contentImageName: [
+                                item.imageName,
+                                item.imageName,
+                                item.imageName
+                              ]));
+                    },
+                  ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -66,9 +139,11 @@ class CategoryHView extends StatelessWidget {
   const CategoryHView({
     super.key,
     required this.categoryList,
+    required this.didClickItem,
   });
 
   final List<CategoryItem> categoryList;
+  final ProductItemCallback didClickItem;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +155,9 @@ class CategoryHView extends StatelessWidget {
           (index) => CategoryHSubView(
             item: categoryList[index],
             viewWidth: MediaQuery.of(context).size.width / categoryList.length,
+            didClickItem: (item) {
+              didClickItem(item);
+            },
           ),
         ),
       ),
@@ -90,10 +168,14 @@ class CategoryHView extends StatelessWidget {
 class CategoryHSubView extends StatelessWidget {
   final CategoryItem item;
   final double viewWidth;
+  final ProductItemCallback didClickItem;
 
-  const CategoryHSubView(
-      {Key? key, required this.item, required this.viewWidth})
-      : super(key: key);
+  const CategoryHSubView({
+    Key? key,
+    required this.item,
+    required this.viewWidth,
+    required this.didClickItem,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +205,11 @@ class CategoryHSubView extends StatelessWidget {
                       itemCount: item.productList.length,
                       itemBuilder: (BuildContext context, int productIndex) {
                         return ProductCard(
-                            item: item.productList[productIndex]);
+                          item: item.productList[productIndex],
+                          onPressed: () {
+                            didClickItem(item.productList[productIndex]);
+                          },
+                        );
                       },
                     ),
                   ],
@@ -141,9 +227,11 @@ class CategoryVView extends StatelessWidget {
   const CategoryVView({
     Key? key,
     required this.categoryList,
+    required this.didClickItem,
   }) : super(key: key);
 
   final List<CategoryItem> categoryList;
+  final ProductItemCallback didClickItem;
 
   @override
   Widget build(BuildContext context) {
@@ -163,8 +251,12 @@ class CategoryVView extends StatelessWidget {
                         itemCount: categoryList[index].productList.length,
                         itemBuilder: (context, productIndex) {
                           return ProductCard(
-                              item: categoryList[index]
+                            item: categoryList[index].productList[productIndex],
+                            onPressed: () {
+                              didClickItem(categoryList[index]
                                   .productList[productIndex]);
+                            },
+                          );
                         },
                       ),
                     ],
@@ -178,6 +270,7 @@ class CategoryVView extends StatelessWidget {
                   (index) => ExpandableList(
                     title: categoryList[index].title,
                     productList: categoryList[index].productList,
+                    didClickItem: didClickItem,
                   ),
                 ),
               ),
@@ -189,8 +282,13 @@ class CategoryVView extends StatelessWidget {
 class ExpandableList extends StatelessWidget {
   final String title;
   final List<ProductItem> productList;
+  final ProductItemCallback didClickItem;
 
-  ExpandableList({required this.title, required this.productList});
+  ExpandableList({
+    required this.title,
+    required this.productList,
+    required this.didClickItem,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +306,12 @@ class ExpandableList extends StatelessWidget {
               physics: BouncingScrollPhysics(),
               itemCount: productList.length,
               itemBuilder: (context, index) {
-                return ProductCard(item: productList[index]);
+                return ProductCard(
+                  item: productList[index],
+                  onPressed: () {
+                    didClickItem(productList[index]);
+                  },
+                );
               },
             ),
           ],
@@ -249,44 +352,52 @@ class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
     required this.item,
+    required this.onPressed,
   });
 
   final ProductItem item;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(0),
-      child: SizedBox(
-        height: 100,
-        child: Card(
-          child: ClipRRect(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(10),
-              bottomLeft: Radius.circular(10),
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey, width: 1.0),
-                borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.all(0),
+        child: SizedBox(
+          height: 100,
+          child: Card(
+            child: ClipRRect(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(10),
+                bottomLeft: Radius.circular(10),
               ),
-              child: Row(
-                children: [
-                  Image(
-                    width: 100,
-                    height: 100,
-                    image: AssetImage(
-                      item.imageName,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey, width: 1.0),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Image(
+                      width: 100,
+                      height: 100,
+                      image: AssetImage(
+                        item.imageName,
+                      ),
+                      fit: BoxFit.fill,
                     ),
-                    fit: BoxFit.fill,
-                  ),
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [Text(item.title), Text(item.subtitle)],
-                  )
-                ],
+                    SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(item.title),
+                        Text(item.subtitle),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
