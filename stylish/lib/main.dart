@@ -10,7 +10,7 @@ void main() {
 }
 
 const String homeRoute = '/';
-const String detailRoute = '/detail';
+const String detailRoute = '/productDetail';
 final Map<String, WidgetBuilder> routes = {
   homeRoute: (context) => HomePage(),
   detailRoute: (context) {
