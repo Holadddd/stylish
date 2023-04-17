@@ -1,9 +1,15 @@
 import 'package:english_words/english_words.dart';
+import 'package:stylish/bloc/home_bloc_event.dart';
 import 'package:stylish/screens/product_detail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'bloc/home_bloc_bloc.dart';
+import 'bloc/home_bloc_state.dart';
+import 'package:stylish/model/category_data.dart';
+import 'package:stylish/model/product_data.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,12 +32,16 @@ final Map<String, WidgetBuilder> routes = {
 };
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => MyAppState(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<HomeBlocBloc>(
+          create: (BuildContext context) => HomeBlocBloc()..add(LoadEvent()),
+        ),
+      ],
       child: MaterialApp(
         title: 'Stylish',
         initialRoute: homeRoute,
@@ -60,7 +70,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-typedef ProductItemCallback = void Function(ProductItem item);
+typedef ProductItemCallback = void Function(ProductData item);
 
 class HomePage extends StatefulWidget {
   @override
@@ -70,8 +80,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blueGrey,
@@ -82,53 +90,67 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            /* Header image */
-            HeaderImageListView(imageList: appState.headerImageList),
-            /*Category*/
-            MediaQuery.of(context).size.width > 800
-                ? CategoryHView(
-                    categoryList: appState.categoryList,
-                    didClickItem: (item) {
-                      // Handle navigate
-                      Navigator.pushNamed(context, detailRoute,
-                          arguments: ProductDetail(
-                              coverImageName: item.imageName,
-                              title: item.title,
-                              productID: "20230405",
-                              price: 123,
-                              sizes: ["S", "M", "L"],
-                              colors: [Colors.green, Colors.blue],
-                              contents: "This is content",
-                              contentImageName: [
-                                item.imageName,
-                                item.imageName,
-                                item.imageName
-                              ]));
-                    },
-                  )
-                : CategoryVView(
-                    categoryList: appState.categoryList,
-                    didClickItem: (item) {
-                      // Handle navigate
-                      Navigator.pushNamed(context, detailRoute,
-                          arguments: ProductDetail(
-                              coverImageName: item.imageName,
-                              title: item.title,
-                              productID: "20230405",
-                              price: 123,
-                              sizes: ["S", "M", "L"],
-                              colors: [Colors.green, Colors.blue],
-                              contents: "This is content",
-                              contentImageName: [
-                                item.imageName,
-                                item.imageName,
-                                item.imageName
-                              ]));
-                    },
+        child: BlocBuilder<HomeBlocBloc, HomeBlocState>(
+          builder: (context, state) {
+            if (state is HomeInitial) {
+              return const CircularProgressIndicator(
+                color: Colors.blue,
+              );
+            }
+
+            if (state is HomeLoaded) {
+              return Column(
+                children: [
+                  /* Header image */
+                  HeaderImageListView(
+                    imageList:
+                        state.campaignList.map((e) => e.picture).toList(),
                   ),
-          ],
+                  /*Category*/
+                  MediaQuery.of(context).size.width > 800
+                      ? CategoryHView(
+                          categoryList: state.categoryList,
+                          didClickItem: (item) {
+                            // TODO: Use product id to request API again
+                            // Handle navigate
+                            Navigator.pushNamed(context, detailRoute,
+                                arguments: ProductDetail(
+                                  coverImageName: item.mainImage,
+                                  title: item.title,
+                                  productID: item.id.toString(),
+                                  price: item.price,
+                                  sizes: item.sizes,
+                                  colors:
+                                      item.colors.map((e) => e.code).toList(),
+                                  contents: item.description,
+                                  contentImageName: item.images,
+                                ));
+                          },
+                        )
+                      : CategoryVView(
+                          categoryList: state.categoryList,
+                          didClickItem: (item) {
+                            // Handle navigate
+                            Navigator.pushNamed(context, detailRoute,
+                                arguments: ProductDetail(
+                                  coverImageName: item.mainImage,
+                                  title: item.title,
+                                  productID: item.id.toString(),
+                                  price: item.price,
+                                  sizes: item.sizes,
+                                  colors:
+                                      item.colors.map((e) => e.code).toList(),
+                                  contents: item.description,
+                                  contentImageName: item.images,
+                                ));
+                          },
+                        ),
+                ],
+              );
+            } else {
+              return const Text("Something went wrong!!!");
+            }
+          },
         ),
       ),
     );
@@ -142,7 +164,7 @@ class CategoryHView extends StatelessWidget {
     required this.didClickItem,
   });
 
-  final List<CategoryItem> categoryList;
+  final List<CategoryData> categoryList;
   final ProductItemCallback didClickItem;
 
   @override
@@ -166,7 +188,7 @@ class CategoryHView extends StatelessWidget {
 }
 
 class CategoryHSubView extends StatelessWidget {
-  final CategoryItem item;
+  final CategoryData item;
   final double viewWidth;
   final ProductItemCallback didClickItem;
 
@@ -202,12 +224,12 @@ class CategoryHSubView extends StatelessWidget {
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
                       scrollDirection: Axis.vertical,
-                      itemCount: item.productList.length,
+                      itemCount: item.products.length,
                       itemBuilder: (BuildContext context, int productIndex) {
                         return ProductCard(
-                          item: item.productList[productIndex],
+                          item: item.products[productIndex],
                           onPressed: () {
-                            didClickItem(item.productList[productIndex]);
+                            didClickItem(item.products[productIndex]);
                           },
                         );
                       },
@@ -230,7 +252,7 @@ class CategoryVView extends StatelessWidget {
     required this.didClickItem,
   }) : super(key: key);
 
-  final List<CategoryItem> categoryList;
+  final List<CategoryData> categoryList;
   final ProductItemCallback didClickItem;
 
   @override
@@ -248,13 +270,13 @@ class CategoryVView extends StatelessWidget {
                       ListView.builder(
                         shrinkWrap: true,
                         physics: BouncingScrollPhysics(),
-                        itemCount: categoryList[index].productList.length,
+                        itemCount: categoryList[index].products.length,
                         itemBuilder: (context, productIndex) {
                           return ProductCard(
-                            item: categoryList[index].productList[productIndex],
+                            item: categoryList[index].products[productIndex],
                             onPressed: () {
-                              didClickItem(categoryList[index]
-                                  .productList[productIndex]);
+                              didClickItem(
+                                  categoryList[index].products[productIndex]);
                             },
                           );
                         },
@@ -269,7 +291,7 @@ class CategoryVView extends StatelessWidget {
                   categoryList.length,
                   (index) => ExpandableList(
                     title: categoryList[index].title,
-                    productList: categoryList[index].productList,
+                    productList: categoryList[index].products,
                     didClickItem: didClickItem,
                   ),
                 ),
@@ -281,7 +303,7 @@ class CategoryVView extends StatelessWidget {
 
 class ExpandableList extends StatelessWidget {
   final String title;
-  final List<ProductItem> productList;
+  final List<ProductData> productList;
   final ProductItemCallback didClickItem;
 
   ExpandableList({
@@ -339,7 +361,7 @@ class HeaderImageListView extends StatelessWidget {
           (index) => Container(
             width: 400.0,
             child: HeaderImageView(
-              imageName: imageList[index],
+              imageUrl: imageList[index],
             ),
           ),
         ),
@@ -355,7 +377,7 @@ class ProductCard extends StatelessWidget {
     required this.onPressed,
   });
 
-  final ProductItem item;
+  final ProductData item;
   final VoidCallback onPressed;
 
   @override
@@ -382,10 +404,8 @@ class ProductCard extends StatelessWidget {
                     Image(
                       width: 100,
                       height: 100,
-                      image: AssetImage(
-                        item.imageName,
-                      ),
-                      fit: BoxFit.fill,
+                      image: NetworkImage(item.mainImage),
+                      fit: BoxFit.fitHeight,
                     ),
                     SizedBox(width: 10),
                     Column(
@@ -393,7 +413,7 @@ class ProductCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(item.title),
-                        Text(item.subtitle),
+                        Text(item.description),
                       ],
                     ),
                   ],
@@ -407,152 +427,14 @@ class ProductCard extends StatelessWidget {
   }
 }
 
-class MyAppState extends ChangeNotifier {
-  var headerImageList = [
-    'assets/header_image.jpg',
-    'assets/header_image.jpg',
-    'assets/header_image.jpg',
-    'assets/header_image.jpg',
-    'assets/header_image.jpg',
-    'assets/header_image.jpg'
-  ];
-
-  var categoryList = [
-    CategoryItem(title: "女裝", productList: [
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 女裝",
-          subtitle: "NT\$ 323")
-    ]),
-    CategoryItem(title: "男裝", productList: [
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 男裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 男裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 男裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 男裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 男裝",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 男裝",
-          subtitle: "NT\$ 323")
-    ]),
-    CategoryItem(title: "配件", productList: [
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323"),
-      ProductItem(
-          imageName: 'assets/header_image.jpg',
-          title: "UNIQLO 配件",
-          subtitle: "NT\$ 323")
-    ])
-  ];
-}
-
-class CategoryItem {
-  final String title;
-  final List<ProductItem> productList;
-
-  CategoryItem({
-    required this.title,
-    required this.productList,
-  });
-}
-
-class ProductItem {
-  final String imageName;
-  final String title;
-  final String subtitle;
-
-  ProductItem({
-    required this.imageName,
-    required this.title,
-    required this.subtitle,
-  });
-}
-
 class HeaderImageView extends StatelessWidget {
   const HeaderImageView({
     Key? key,
-    required this.imageName,
+    required this.imageUrl,
     this.borderRadius = 10.0,
   }) : super(key: key);
 
-  final String imageName;
+  final String imageUrl;
   final double borderRadius;
 
   @override
@@ -568,8 +450,8 @@ class HeaderImageView extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: Image(
-          image: AssetImage(imageName),
-          fit: BoxFit.fill,
+          image: NetworkImage(imageUrl),
+          fit: BoxFit.fitHeight,
         ),
       ),
     );

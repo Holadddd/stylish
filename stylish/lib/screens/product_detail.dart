@@ -6,9 +6,9 @@ class ProductDetail {
   final String coverImageName;
   final String title;
   final String productID;
-  final int price;
+  final double price;
   final List<String> sizes;
-  final List<Color> colors;
+  final List<String> colors;
   final String contents;
   final List<String> contentImageName;
   ProductDetail({
@@ -172,7 +172,10 @@ class _DetailSelectorState extends State<DetailSelector> {
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: widget.productDetail.colors[index],
+                          color: Color(
+                            int.parse(
+                                "0xFF" + widget.productDetail.colors[index]),
+                          ),
                           borderRadius: BorderRadius.circular(0),
                         ),
                       ),
