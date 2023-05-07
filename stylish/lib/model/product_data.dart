@@ -3,7 +3,7 @@ class ProductData {
   String category;
   String title;
   String description;
-  double price;
+  int price;
   String texture;
   String wash;
   String place;

@@ -1,35 +1,41 @@
 import 'package:english_words/english_words.dart';
-import 'package:stylish/bloc/home_bloc_event.dart';
-import 'package:stylish/screens/product_detail.dart';
+import 'package:stylish/bloc/home/home_bloc_event.dart';
+import 'package:stylish/product_detail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'bloc/home_bloc_bloc.dart';
-import 'bloc/home_bloc_state.dart';
+import 'bloc/home/home_bloc_bloc.dart';
+import 'bloc/home/home_bloc_state.dart';
 import 'package:stylish/model/category_data.dart';
 import 'package:stylish/model/product_data.dart';
+import 'package:go_router/go_router.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-const String homeRoute = '/';
-const String detailRoute = '/productDetail';
-final Map<String, WidgetBuilder> routes = {
-  homeRoute: (context) => HomePage(),
-  detailRoute: (context) {
-    // Retrieves the arguments passed to the route when it was pushed.
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is ProductDetail) {
-      // Pass the ID parameter to the ProductDetailPage constructor
-      return ProductDetailPage(productDetail: args);
-    } else {
-      throw ArgumentError("Invalid argument for ProductDetailPage");
-    }
-  },
-};
+/// The route configuration.
+final GoRouter _router = GoRouter(
+  routes: <RouteBase>[
+    GoRoute(
+      path: '/',
+      builder: (BuildContext context, GoRouterState state) {
+        return HomePage();
+      },
+      routes: <RouteBase>[
+        GoRoute(
+          path: 'productDetail/:id',
+          builder: (BuildContext context, GoRouterState state) {
+            var id = state.params['id'] as String?;
+            return id == null ? const SizedBox() : ProductDetailPage(id: id);
+          },
+        ),
+      ],
+    ),
+  ],
+);
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -42,25 +48,9 @@ class MyApp extends StatelessWidget {
           create: (BuildContext context) => HomeBlocBloc()..add(LoadEvent()),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Stylish',
-        initialRoute: homeRoute,
-        routes: routes,
-        onGenerateRoute: (RouteSettings settings) {
-          final args = settings.arguments;
-          WidgetBuilder builder;
-          switch (settings.name) {
-            case detailRoute:
-              final productDetail = args as ProductDetail;
-              builder = (BuildContext context) => ProductDetailPage(
-                    productDetail: productDetail,
-                  );
-              break;
-            default:
-              throw Exception('Invalid route: ${settings.name}');
-          }
-          return MaterialPageRoute(builder: builder, settings: settings);
-        },
+        routerConfig: _router,
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.grey),
@@ -111,38 +101,14 @@ class _HomePageState extends State<HomePage> {
                       ? CategoryHView(
                           categoryList: state.categoryList,
                           didClickItem: (item) {
-                            // TODO: Use product id to request API again
                             // Handle navigate
-                            Navigator.pushNamed(context, detailRoute,
-                                arguments: ProductDetail(
-                                  coverImageName: item.mainImage,
-                                  title: item.title,
-                                  productID: item.id.toString(),
-                                  price: item.price,
-                                  sizes: item.sizes,
-                                  colors:
-                                      item.colors.map((e) => e.code).toList(),
-                                  contents: item.description,
-                                  contentImageName: item.images,
-                                ));
-                          },
-                        )
+                            context.go('/productDetail/${item.id}');
+                          })
                       : CategoryVView(
                           categoryList: state.categoryList,
                           didClickItem: (item) {
                             // Handle navigate
-                            Navigator.pushNamed(context, detailRoute,
-                                arguments: ProductDetail(
-                                  coverImageName: item.mainImage,
-                                  title: item.title,
-                                  productID: item.id.toString(),
-                                  price: item.price,
-                                  sizes: item.sizes,
-                                  colors:
-                                      item.colors.map((e) => e.code).toList(),
-                                  contents: item.description,
-                                  contentImageName: item.images,
-                                ));
+                            context.go('/productDetail/${item.id}');
                           },
                         ),
                 ],

@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'bloc/home/home_bloc_bloc.dart';
+import 'bloc/home/home_bloc_state.dart';
 
 class ProductDetail {
   final String coverImageName;
@@ -24,25 +27,27 @@ class ProductDetail {
 }
 
 class ProductDetailPage extends StatelessWidget {
-  const ProductDetailPage({Key? key, required this.productDetail})
-      : super(key: key);
+  const ProductDetailPage({Key? key, required this.id}) : super(key: key);
 
-  final ProductDetail productDetail;
+  final String id;
 
   @override
   Widget build(BuildContext buildContext) {
     final coverImage = Image(
       width: 350,
       height: 500,
-      image: AssetImage(productDetail.coverImageName),
+      image: AssetImage("productDetail.coverImageName"),
       fit: BoxFit.fitHeight,
     );
-
     final priceText = Container(
       width: 350,
       height: 500,
-      child: DetailSelector(
-        productDetail: productDetail,
+      child: BlocBuilder<HomeBlocBloc, HomeBlocState>(
+        builder: (context, state) {
+          return DetailSelector(
+            productID: id,
+          );
+        },
       ),
     );
 
@@ -95,10 +100,9 @@ class ProductDetailPage extends StatelessWidget {
 }
 
 class DetailSelector extends StatefulWidget {
-  const DetailSelector({Key? key, required this.productDetail})
-      : super(key: key);
+  const DetailSelector({Key? key, required this.productID}) : super(key: key);
 
-  final ProductDetail productDetail;
+  final String productID;
 
   @override
   State<DetailSelector> createState() => _DetailSelectorState();
@@ -135,17 +139,17 @@ class _DetailSelectorState extends State<DetailSelector> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          widget.productDetail.title,
+          "Detail Title",
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         Text(
-          widget.productDetail.productID.toString(),
+          "Detail string",
           style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),
         const SizedBox(height: 10),
         Text(
-          'NT\$: ${widget.productDetail.price}', //Escape the dollar sign character so that it is displayed as a literal character in the string
+          'NT\$: detail price', //Escape the dollar sign character so that it is displayed as a literal character in the string
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
@@ -157,7 +161,7 @@ class _DetailSelectorState extends State<DetailSelector> {
             Wrap(
               spacing: 16,
               children: List.generate(
-                widget.productDetail.colors.length,
+                3,
                 (index) => Container(
                   color: _selectedColorIndex == index
                       ? Colors.black
@@ -172,10 +176,7 @@ class _DetailSelectorState extends State<DetailSelector> {
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: Color(
-                            int.parse(
-                                "0xFF" + widget.productDetail.colors[index]),
-                          ),
+                          color: Colors.green,
                           borderRadius: BorderRadius.circular(0),
                         ),
                       ),
@@ -194,7 +195,7 @@ class _DetailSelectorState extends State<DetailSelector> {
             Wrap(
               spacing: 16,
               children: List.generate(
-                widget.productDetail.sizes.length,
+                3,
                 (index) => SizedBox(
                   height: 24,
                   width: 32,
@@ -206,7 +207,7 @@ class _DetailSelectorState extends State<DetailSelector> {
                     label: Padding(
                       padding: EdgeInsets.zero,
                       child: Center(
-                        child: Text(widget.productDetail.sizes[index]),
+                        child: Text("L"),
                       ),
                     ),
                     padding: EdgeInsets.zero,

@@ -36,25 +36,6 @@ class ApiService {
 
   String webUrl = "https://api.appworks-school.tw/api/1.0";
 
-  Future<Response> get(String url,
-      {Map<String, dynamic>? queryParameters}) async {
-    try {
-      Response response = await _dio.get(url, queryParameters: queryParameters);
-      return response;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  Future<Response> post(String url, {dynamic data}) async {
-    try {
-      Response response = await _dio.post(url, data: data);
-      return response;
-    } catch (e) {
-      throw e;
-    }
-  }
-
   Future<List<CampaignData>> getCampaigns() async {
     String endpoint = "/marketing/campaigns";
     try {
