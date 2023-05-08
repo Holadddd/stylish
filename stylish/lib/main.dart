@@ -1,6 +1,7 @@
 import 'package:english_words/english_words.dart';
 import 'package:stylish/bloc/home/home_bloc_event.dart';
 import 'package:stylish/map.dart';
+import 'package:stylish/call.dart';
 import 'package:stylish/product_detail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,11 @@ import 'bloc/home/home_bloc_state.dart';
 import 'package:stylish/model/category_data.dart';
 import 'package:stylish/model/product_data.dart';
 import 'package:go_router/go_router.dart';
+
+enum DialogDemoAction {
+  cancel,
+  connect,
+}
 
 void main() {
   runApp(const MyApp());
@@ -37,6 +43,13 @@ final GoRouter _router = GoRouter(
           path: 'map',
           builder: (BuildContext context, GoRouterState state) {
             return MapPage();
+          },
+        ),
+        GoRoute(
+          path: 'call/:host',
+          builder: (BuildContext context, GoRouterState state) {
+            var host = state.params['host'] as String;
+            return CallSample(host: host);
           },
         ),
       ],
@@ -75,6 +88,53 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String _server = '';
+
+  void showDemoDialog<T>(
+      {required BuildContext context, required Widget child}) {
+    showDialog<T>(
+      context: context,
+      builder: (BuildContext context) => child,
+    ).then<void>((T? value) {
+      // The value passed to Navigator.pop() or null.
+      if (value != null) {
+        if (value == DialogDemoAction.connect) {
+          context.go('/call/{$_server}');
+        }
+      }
+    });
+  }
+
+  _showAddressDialog(context) {
+    showDemoDialog<DialogDemoAction>(
+        context: context,
+        child: AlertDialog(
+            title: const Text('Enter server address:'),
+            content: TextField(
+              onChanged: (String text) {
+                setState(() {
+                  _server = text;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: _server,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            actions: <Widget>[
+              TextButton(
+                  child: const Text('CANCEL'),
+                  onPressed: () {
+                    Navigator.pop(context, DialogDemoAction.cancel);
+                  }),
+              TextButton(
+                  child: const Text('CONNECT'),
+                  onPressed: () {
+                    Navigator.pop(context, DialogDemoAction.connect);
+                  })
+            ]));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,6 +185,17 @@ class _HomePageState extends State<HomePage> {
                   Positioned(
                     bottom: 16,
                     right: 16,
+                    child: IconButton(
+                      icon: Icon(Icons.phone),
+                      onPressed: () {
+                        // Handle navigate
+                        _showAddressDialog(context);
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 16,
+                    right: 56,
                     child: IconButton(
                       icon: Icon(Icons.map),
                       onPressed: () {
