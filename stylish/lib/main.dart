@@ -1,5 +1,6 @@
 import 'package:english_words/english_words.dart';
 import 'package:stylish/bloc/home/home_bloc_event.dart';
+import 'package:stylish/map.dart';
 import 'package:stylish/product_detail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,12 @@ final GoRouter _router = GoRouter(
           builder: (BuildContext context, GoRouterState state) {
             var id = state.params['id'] as String?;
             return id == null ? const SizedBox() : ProductDetailPage(id: id);
+          },
+        ),
+        GoRoute(
+          path: 'map',
+          builder: (BuildContext context, GoRouterState state) {
+            return MapPage();
           },
         ),
       ],
@@ -89,28 +96,43 @@ class _HomePageState extends State<HomePage> {
             }
 
             if (state is HomeLoaded) {
-              return Column(
+              return Stack(
                 children: [
-                  /* Header image */
-                  HeaderImageListView(
-                    imageList:
-                        state.campaignList.map((e) => e.picture).toList(),
+                  Column(
+                    children: [
+                      /* Header image */
+                      HeaderImageListView(
+                        imageList:
+                            state.campaignList.map((e) => e.picture).toList(),
+                      ),
+                      /*Category*/
+                      MediaQuery.of(context).size.width > 800
+                          ? CategoryHView(
+                              categoryList: state.categoryList,
+                              didClickItem: (item) {
+                                // Handle navigate
+                                context.go('/productDetail/${item.id}');
+                              })
+                          : CategoryVView(
+                              categoryList: state.categoryList,
+                              didClickItem: (item) {
+                                // Handle navigate
+                                context.go('/productDetail/${item.id}');
+                              },
+                            ),
+                    ],
                   ),
-                  /*Category*/
-                  MediaQuery.of(context).size.width > 800
-                      ? CategoryHView(
-                          categoryList: state.categoryList,
-                          didClickItem: (item) {
-                            // Handle navigate
-                            context.go('/productDetail/${item.id}');
-                          })
-                      : CategoryVView(
-                          categoryList: state.categoryList,
-                          didClickItem: (item) {
-                            // Handle navigate
-                            context.go('/productDetail/${item.id}');
-                          },
-                        ),
+                  Positioned(
+                    bottom: 16,
+                    right: 16,
+                    child: IconButton(
+                      icon: Icon(Icons.map),
+                      onPressed: () {
+                        // Handle navigate
+                        context.go('/map');
+                      },
+                    ),
+                  ),
                 ],
               );
             } else {

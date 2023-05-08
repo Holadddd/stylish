@@ -33,12 +33,7 @@ class ProductDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext buildContext) {
-    final coverImage = Image(
-      width: 350,
-      height: 500,
-      image: AssetImage("productDetail.coverImageName"),
-      fit: BoxFit.fitHeight,
-    );
+    final coverImage = Image(image: AssetImage('assets/header_image.jpg'));
     final priceText = Container(
       width: 350,
       height: 500,
