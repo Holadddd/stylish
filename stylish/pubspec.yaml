@@ -23,6 +23,7 @@ dependencies:
   http: ^0.13.6
   json_serializable: ^6.6.2
   json_annotation: ^4.8.1
+  arkit_plugin: ^1.0.6
 
 dev_dependencies:
   flutter_test:
@@ -37,6 +38,8 @@ flutter:
     - assets/bar_image.png
     - assets/header_image.jpg
     - assets/locations.json
+    - assets/cherub.dae
+    - assets/toy.usdz
 
 
 

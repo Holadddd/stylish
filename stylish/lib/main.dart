@@ -1,4 +1,5 @@
 import 'package:english_words/english_words.dart';
+import 'package:stylish/ar.dart';
 import 'package:stylish/bloc/home/home_bloc_event.dart';
 import 'package:stylish/map.dart';
 import 'package:stylish/product_detail.dart';
@@ -37,6 +38,12 @@ final GoRouter _router = GoRouter(
           path: 'map',
           builder: (BuildContext context, GoRouterState state) {
             return MapPage();
+          },
+        ),
+        GoRoute(
+          path: 'ar',
+          builder: (BuildContext context, GoRouterState state) {
+            return ARView();
           },
         ),
       ],
@@ -122,16 +129,31 @@ class _HomePageState extends State<HomePage> {
                             ),
                     ],
                   ),
-                  Positioned(
-                    bottom: 16,
-                    right: 16,
-                    child: IconButton(
-                      icon: Icon(Icons.map),
-                      onPressed: () {
-                        // Handle navigate
-                        context.go('/map');
-                      },
-                    ),
+                  Row(
+                    children: [
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: IconButton(
+                          icon: Icon(Icons.map),
+                          onPressed: () {
+                            // Handle navigate
+                            context.go('/map');
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: IconButton(
+                          icon: Icon(Icons.camera),
+                          onPressed: () {
+                            // Handle navigate
+                            context.go('/ar');
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               );
